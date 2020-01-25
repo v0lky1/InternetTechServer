@@ -9,25 +9,26 @@ public class ClientThread extends Thread {
     private PrintWriter writer;
     private BufferedReader reader;
     private Server server;
+    private PingThread pt;
     private User user;
 
-    public ClientThread(Server server, Socket socket) throws IOException {
+    public ClientThread(Server server, Socket socket, PingThread pt) throws IOException {
         this.server = server;
         this.socket = socket;
         this.inputStream = socket.getInputStream();
         this.outputStream = socket.getOutputStream();
+        this.pt = pt;
         writer = new PrintWriter(outputStream);
         reader = new BufferedReader(new InputStreamReader(inputStream));
     }
 
     @Override
     public void run() {
-        StringBuilder sb = new StringBuilder().append("HELO ");
-        String welcomeMessage = "Welkom bij RemEd Chatservices!";
-        sb.append(welcomeMessage);
-        System.out.println(sb.toString());
-        writer.println(sb.toString());
+        String welcomeMsg = "HELO " + "Welkom bij RemEd Chatservices!";
+        writer.println(welcomeMsg);
         writer.flush();
+        pt.setCt(this);
+        pt.start();
 
         while (!user.isDisconnect()) {
             int splitLimit = 3;
@@ -91,7 +92,7 @@ public class ClientThread extends Thread {
                         break;
 
                     case "PONG":
-                        user.getPingThread().pongReceived();
+                        pt.pongReceived();
                         break;
 
                     default:

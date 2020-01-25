@@ -1,5 +1,5 @@
 public class PingThread extends Thread {
-    private User user;
+    private ClientThread ct;
     private boolean pongReceived;
 
     public PingThread() {
@@ -8,22 +8,21 @@ public class PingThread extends Thread {
 
     public void run() {
 
-        while (!user.isDisconnect()) {
+        while (true) {
             pongReceived = false;
             try {
-                sleep(15000);
+                sleep(1500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
-            user.getClientThread().sendMessage("PING");
+            ct.sendMessage("PING");
             long startTime = System.currentTimeMillis();
             while (!pongReceived) {
 
                 long currentTime = System.currentTimeMillis();
                 if (currentTime > (startTime + 3000)) {
-                    user.getClientThread().sendMessage("DSCN Pong timeout");
-                    user.disconnect();
+                    ct.sendMessage("DSCN Pong timeout");
                     break;
                 }
             }
@@ -34,7 +33,7 @@ public class PingThread extends Thread {
         pongReceived = true;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setCt(ClientThread ct) {
+        this.ct = ct;
     }
 }

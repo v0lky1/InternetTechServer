@@ -20,33 +20,21 @@ public class Server {
     private void run() throws IOException {
         // Create a socket to wait for clients.
         serverSocket = new ServerSocket(SERVER_PORT);
-//        clientThreads = new ArrayList<>();
-//        pingThreads = new ArrayList<>();
         users = new ArrayList<>();
 
         while (true) {
             // Wait for an incoming client-connection request (blocking).
             Socket socket = serverSocket.accept();
             PingThread pt = new PingThread();
-            ClientThread ct = new ClientThread(this, socket);
-            //clientThreads.add(ct);
+            ClientThread ct = new ClientThread(this, socket, pt);
+
 
             //creating new user, letting the user know what his clientthread is and we're letting the clientthread
             //know who his user is
-            User user = new User(ct, pt);
+            User user = new User(ct);
             users.add(user);
             ct.setUser(user);
-            pt.setUser(user);
-
-            // Message processing thread
-            new Thread(ct).start();
-            new Thread(pt).start();
-
-
-            // Your code here:
-            // TODO: Start a message processing thread for each connecting client.
-
-            // TODO: Start a ping thread for each connecting client.
+            ct.start();
         }
     }
 

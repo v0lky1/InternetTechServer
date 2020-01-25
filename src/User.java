@@ -4,9 +4,8 @@ public class User {
     private PingThread pt;
     private boolean disconnect = false;
 
-    public User(ClientThread ct, PingThread pt) {
+    public User(ClientThread ct) {
         this.ct = ct;
-        this.pt = pt;
     }
 
     public ClientThread getClientThread() {
