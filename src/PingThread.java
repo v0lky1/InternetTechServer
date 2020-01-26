@@ -1,39 +1,30 @@
 public class PingThread extends Thread {
     private ClientThread ct;
-    private boolean pongReceived;
+    private boolean running;
 
-    public PingThread() {
-
+    public PingThread(ClientThread ct) {
+        this.ct = ct;
     }
 
     public void run() {
+        running = true;
 
-        while (true) {
-            pongReceived = false;
+        while (running) {
             try {
-                sleep(1500);
+                sleep(15000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
             ct.sendMessage("PING");
-            long startTime = System.currentTimeMillis();
-            while (!pongReceived) {
+            System.out.println("PING: " + ct.getUser());
 
-                long currentTime = System.currentTimeMillis();
-                if (currentTime > (startTime + 3000)) {
-                    ct.sendMessage("DSCN Pong timeout");
-                    break;
-                }
-            }
+            long pingSentTime = System.currentTimeMillis();
+            ct.pingSent(pingSentTime);
         }
     }
 
-    public void pongReceived() {
-        pongReceived = true;
-    }
-
-    public void setCt(ClientThread ct) {
-        this.ct = ct;
+    public void exit() {
+        running = false;
     }
 }

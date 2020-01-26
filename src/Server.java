@@ -25,15 +25,9 @@ public class Server {
         while (true) {
             // Wait for an incoming client-connection request (blocking).
             Socket socket = serverSocket.accept();
-            PingThread pt = new PingThread();
-            ClientThread ct = new ClientThread(this, socket, pt);
-
-
+            ClientThread ct = new ClientThread(this, socket);
             //creating new user, letting the user know what his clientthread is and we're letting the clientthread
             //know who his user is
-            User user = new User(ct);
-            users.add(user);
-            ct.setUser(user);
             ct.start();
         }
     }
@@ -41,7 +35,10 @@ public class Server {
     public void sendBroadcastMessage(String sender, String message) {
         for (User user : users) {
             if (!user.getUsername().equals(sender)) {
+                System.err.println("OUT \t >> " + message);
                 user.getClientThread().sendMessage(message);
+            } else{
+                user.getClientThread().sendMessage("+OK " + message);
             }
         }
     }
@@ -49,5 +46,9 @@ public class Server {
     public void removeUser(User user) {
         user.disconnect();
         users.remove(user);
+    }
+
+    public void addUser(User user) {
+        users.add(user);
     }
 }

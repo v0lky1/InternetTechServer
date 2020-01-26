@@ -11,39 +11,47 @@ public class ClientThread extends Thread {
     private Server server;
     private PingThread pt;
     private User user;
+    private boolean waiting;
+    private boolean running;
 
-    public ClientThread(Server server, Socket socket, PingThread pt) throws IOException {
+    public ClientThread(Server server, Socket socket) throws IOException {
         this.server = server;
         this.socket = socket;
         this.inputStream = socket.getInputStream();
         this.outputStream = socket.getOutputStream();
-        this.pt = pt;
+        this.pt = new PingThread(this);
         writer = new PrintWriter(outputStream);
         reader = new BufferedReader(new InputStreamReader(inputStream));
+        user = new User(this, pt);
+        server.addUser(user);
     }
 
     @Override
     public void run() {
         String welcomeMsg = "HELO " + "Welkom bij RemEd Chatservices!";
+        System.err.println("OUT \t >> " + welcomeMsg);
         writer.println(welcomeMsg);
         writer.flush();
-        pt.setCt(this);
         pt.start();
 
-        while (!user.isDisconnect()) {
+        running = true;
+
+        while (running) {
             int splitLimit = 3;
 
-            String line = null;
+            String line = "";
+
 
             try {
                 line = reader.readLine();
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             if (line != null) {
+                System.out.println("IN \t << " + user + " " + line);
 
-                System.out.println("IN " + user + " " + line);
 
                 if (line.startsWith("HELO") || line.startsWith("BCST")) {
                     splitLimit = 2;
@@ -59,18 +67,14 @@ public class ClientThread extends Thread {
 
                     case "BCST":
                         String message = "BCST [" + user.getUsername() + "] " + incomingMessage[1];
-                        System.out.println("OUT " + message);
+                        System.err.println("OUT \t >> " + message);
                         server.sendBroadcastMessage(user.getUsername(), message);
                         break;
 
                     case "QUIT":
-                        sendMessage("+ OK Goodbye");
-                        try {
-                            socket.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        sendMessage("+OK Goodbye");
                         user.disconnect();
+
                         break;
 
                     case "RQST":
@@ -92,7 +96,7 @@ public class ClientThread extends Thread {
                         break;
 
                     case "PONG":
-                        pt.pongReceived();
+                        waiting = false;
                         break;
 
                     default:
@@ -100,16 +104,42 @@ public class ClientThread extends Thread {
 
                 }
             }
+
         }
     }
 
     public void sendMessage(String message) {
-        System.out.println("OUT " + message + " " + user);
+        System.err.println("OUT \t >> " + message + " " + user);
         writer.println(message);
         writer.flush();
     }
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void exit() {
+        running = false;
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public void pingSent(long pingSentTime) {
+        waiting = true;
+//todo WIPd
+        while (waiting) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime >= (pingSentTime + 3 * 1000)) {
+                sendMessage("DSCN Pong timeout");
+                user.disconnect();
+                break;
+            }
+        }
     }
 }

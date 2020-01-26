@@ -1,11 +1,13 @@
+import java.io.IOException;
+
 public class User {
     private String username;
     private ClientThread ct;
     private PingThread pt;
-    private boolean disconnect = false;
 
-    public User(ClientThread ct) {
+    public User(ClientThread ct, PingThread pt) {
         this.ct = ct;
+        this.pt = pt;
     }
 
     public ClientThread getClientThread() {
@@ -20,13 +22,15 @@ public class User {
         return username;
     }
 
-    public boolean isDisconnect() {
-        return disconnect;
-    }
-
     public void disconnect() {
-        System.err.println("Dropping: " + username);
-        this.disconnect = true;
+        pt.exit();
+        ct.exit();
+        try {
+            ct.getSocket().close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.err.println("Dropped user: " + username);
     }
 
     public PingThread getPingThread() {
