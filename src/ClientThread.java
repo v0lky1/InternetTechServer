@@ -13,6 +13,8 @@ public class ClientThread extends Thread {
     private User user;
     private boolean waiting;
     private boolean running;
+    private boolean userAlreadyLoggedIn = false;
+    private boolean invalidCharacters = true;
 
     public ClientThread(Server server, Socket socket) throws IOException {
         this.server = server;
@@ -20,19 +22,18 @@ public class ClientThread extends Thread {
         this.inputStream = socket.getInputStream();
         this.outputStream = socket.getOutputStream();
         this.pt = new PingThread(this);
-        writer = new PrintWriter(outputStream);
-        reader = new BufferedReader(new InputStreamReader(inputStream));
-        user = new User(this, pt);
-        server.addUser(user);
     }
 
     @Override
     public void run() {
+        writer = new PrintWriter(outputStream);
+        reader = new BufferedReader(new InputStreamReader(inputStream));
+
         String welcomeMsg = "HELO " + "Welkom bij RemEd Chatservices!";
         System.err.println("OUT \t >> " + welcomeMsg);
         writer.println(welcomeMsg);
         writer.flush();
-        pt.start();
+        //  pt.start();
 
         running = true;
 
@@ -59,10 +60,28 @@ public class ClientThread extends Thread {
 
                 String[] incomingMessage = line.split(" ", splitLimit);
 
+
+
                 switch (incomingMessage[0]) {
                     case "HELO":
-                        user.setUsername(incomingMessage[1]);
-                        sendMessage("+OK HELO " + user.getUsername());
+                        String username = incomingMessage[1];
+                        System.out.println(username);
+
+                        for (User u : server.getUsers()) {
+                            if (u.getUsername().matches("^[a-zA-Z0-9._-]{3,}$")) {
+                                invalidCharacters = false;
+                            }
+                            if (u.getUsername().equals(username)) {
+                                userAlreadyLoggedIn = true;
+                            }
+                        }
+                        if (userAlreadyLoggedIn) {
+                            sendMessage("-ERR user already logged in");
+                        } else if(invalidCharacters) {
+                            sendMessage("-ERR username has an invalid format (only characters, numbers and underscores are allowed)");
+                        }
+                            server.addUser(new User(this, this.pt, username));
+                            sendMessage("+OK HELO " + username);
                         break;
 
                     case "BCST":

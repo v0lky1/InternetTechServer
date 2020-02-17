@@ -7,7 +7,7 @@ public class Server {
 
     private ServerSocket serverSocket;
     private static final int SERVER_PORT = 6969;
-    private static ArrayList<User> users;
+    private ArrayList<User> users;
 
     public static void main(String[] args) {
         try {
@@ -37,7 +37,7 @@ public class Server {
             if (!user.getUsername().equals(sender)) {
                 System.err.println("OUT \t >> " + message);
                 user.getClientThread().sendMessage(message);
-            } else{
+            } else {
                 user.getClientThread().sendMessage("+OK " + message);
             }
         }
@@ -50,5 +50,9 @@ public class Server {
 
     public void addUser(User user) {
         users.add(user);
+    }
+
+    public ArrayList<User> getUsers(){
+        return users;
     }
 }

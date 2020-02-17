@@ -5,9 +5,10 @@ public class User {
     private ClientThread ct;
     private PingThread pt;
 
-    public User(ClientThread ct, PingThread pt) {
+    public User(ClientThread ct, PingThread pt, String username) {
         this.ct = ct;
         this.pt = pt;
+        this.username = username;
     }
 
     public ClientThread getClientThread() {
