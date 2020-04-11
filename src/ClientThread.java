@@ -9,19 +9,16 @@ public class ClientThread extends Thread {
     private PrintWriter writer;
     private BufferedReader reader;
     private Server server;
-    private PingThread pt;
-    private User user;
+    private String username;
     private boolean waiting;
     private boolean running;
-    private boolean userAlreadyLoggedIn = false;
-    private boolean invalidCharacters = true;
 
-    public ClientThread(Server server, Socket socket) throws IOException {
+    public ClientThread(Server server, Socket socket, String tempUsername) throws IOException {
         this.server = server;
         this.socket = socket;
+        this.username = tempUsername;
         this.inputStream = socket.getInputStream();
         this.outputStream = socket.getOutputStream();
-        this.pt = new PingThread(this);
     }
 
     @Override
@@ -30,7 +27,7 @@ public class ClientThread extends Thread {
         reader = new BufferedReader(new InputStreamReader(inputStream));
 
         String welcomeMsg = "HELO " + "Welkom bij RemEd Chatservices!";
-        System.err.println("OUT \t >> " + welcomeMsg);
+        System.err.println("\tOUT\t>> " + welcomeMsg);
         writer.println(welcomeMsg);
         writer.flush();
         //  pt.start();
@@ -42,7 +39,7 @@ public class ClientThread extends Thread {
 
             String line = "";
 
-
+            // Try to read the line.
             try {
                 line = reader.readLine();
 
@@ -51,7 +48,7 @@ public class ClientThread extends Thread {
             }
 
             if (line != null) {
-                System.out.println("IN \t << " + user + " " + line);
+                System.out.println("\tIN\t<< " + line);
 
 
                 if (line.startsWith("HELO") || line.startsWith("BCST")) {
@@ -60,40 +57,30 @@ public class ClientThread extends Thread {
 
                 String[] incomingMessage = line.split(" ", splitLimit);
 
-
-
                 switch (incomingMessage[0]) {
                     case "HELO":
-                        String username = incomingMessage[1];
+                        String uname = incomingMessage[1];
                         System.out.println(username);
+                        System.out.println(uname);
 
-                        for (User u : server.getUsers()) {
-                            if (u.getUsername().matches("^[a-zA-Z0-9._-]{3,}$")) {
-                                invalidCharacters = false;
-                            }
-                            if (u.getUsername().equals(username)) {
-                                userAlreadyLoggedIn = true;
-                            }
-                        }
-                        if (userAlreadyLoggedIn) {
-                            sendMessage("-ERR user already logged in");
-                        } else if(invalidCharacters) {
+                        if (!uname.matches("^[a-zA-Z0-9_]{3,}$")) {
                             sendMessage("-ERR username has an invalid format (only characters, numbers and underscores are allowed)");
-                        }
-                            server.addUser(new User(this, this.pt, username));
+                        } else if (server.hasUsername(username, uname)) {
                             sendMessage("+OK HELO " + username);
+                        } else {
+                            sendMessage("-ERR user already logged in");
+                        }
                         break;
 
                     case "BCST":
-                        String message = "BCST [" + user.getUsername() + "] " + incomingMessage[1];
-                        System.err.println("OUT \t >> " + message);
-                        server.sendBroadcastMessage(user.getUsername(), message);
+                        String message = "BCST [" + username + "] " + incomingMessage[1];
+                        System.err.println("\tOUT\t>> " + message);
+                        server.sendBroadcastMessage(username, message);
                         break;
 
                     case "QUIT":
                         sendMessage("+OK Goodbye");
-                        user.disconnect();
-
+                        server.disconnect(username);
                         break;
 
                     case "RQST":
@@ -115,7 +102,7 @@ public class ClientThread extends Thread {
                         break;
 
                     case "PONG":
-                        waiting = false;
+                        server.notifyPingThread(username);
                         break;
 
                     default:
@@ -123,42 +110,24 @@ public class ClientThread extends Thread {
 
                 }
             }
-
         }
     }
 
     public void sendMessage(String message) {
-        System.err.println("OUT \t >> " + message + " " + user);
+        System.err.println("\tOUT\t>> " + message + " [" + username + "]");
         writer.println(message);
         writer.flush();
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public User getUser() {
-        return user;
     }
 
     public void exit() {
         running = false;
     }
 
-    public Socket getSocket() {
-        return socket;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
-    public void pingSent(long pingSentTime) {
-        waiting = true;
-//todo WIPd
-        while (waiting) {
-            long currentTime = System.currentTimeMillis();
-            if (currentTime >= (pingSentTime + 3 * 1000)) {
-                sendMessage("DSCN Pong timeout");
-                user.disconnect();
-                break;
-            }
-        }
+    public Socket getSocket() {
+        return socket;
     }
 }
