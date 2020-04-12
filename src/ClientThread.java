@@ -128,6 +128,12 @@ public class ClientThread extends Thread {
                             server.kickFromGroup(username, incomingMessage[1], incomingMessage[2]);
                             break;
 
+                        case "SENDFILE":
+                            incomingMessage = incomingMessage[1].split(" ", 2);
+                            // 0 = recipient, 1 = rest of the message (filename + bytes)
+                            server.sendMessage(incomingMessage[0], "RECEIVEFILE " + username + " " + incomingMessage[1]);
+                            break;
+
                         case "PONG":
                             server.notifyPingThread(username);
                             break;
