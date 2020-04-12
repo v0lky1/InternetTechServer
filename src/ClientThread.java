@@ -81,6 +81,7 @@ public class ClientThread extends Thread {
                             String message = "BCST [" + username + "] " + incomingMessage[1];
                             System.err.println("\tOUT\t>> " + message);
                             server.sendBroadcastMessage(username, message);
+                            sendMessage("+OK BCST " + incomingMessage[1]);
                             break;
 
                         case "QUIT":
