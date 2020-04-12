@@ -25,9 +25,9 @@ public class Server {
         userCounter = 0;
         ConnectionThread connectionThread = new ConnectionThread(this, SERVER_PORT);
         usernames = new ArrayList<>();
+        groups = new ArrayList<>();
         clientThreads = new HashMap<>();
         pingThreads = new HashMap<>();
-        groups = new ArrayList<>();
 
         connectionThread.start();
     }
@@ -45,7 +45,7 @@ public class Server {
             clientThreads.get(recipient).sendMessage(message);
             clientThreads.get(sender).sendMessage(returnMessage);
         } else {
-            clientThreads.get(sender).sendMessage("-ERR User not online");
+            clientThreads.get(sender).sendMessage("-ERR user not online");
         }
     }
 
@@ -65,7 +65,7 @@ public class Server {
             }
             clientThreads.get(username).sendMessage("+EOL groups");
         } else {
-            clientThreads.get(username).sendMessage("-ERR No groups on the server.");
+            clientThreads.get(username).sendMessage("-ERR no groups on the server.");
         }
     }
 
@@ -75,7 +75,7 @@ public class Server {
             groups.add(new Group(owner, groupName));
             clientThreads.get(owner).sendMessage("+OK MAKE " + groupName);
         } else {
-            clientThreads.get(owner).sendMessage("-ERR Group name already exists");
+            clientThreads.get(owner).sendMessage("-ERR group name already exists");
         }
     }
 
@@ -87,10 +87,10 @@ public class Server {
             if (group.addMember(username)) {
                 message = "+OK JOIN " + groupName;
             } else {
-                message = "-ERR You're already part of this group.";
+                message = "-ERR you're already part of this group.";
             }
         } else {
-            message = "-ERR Group does not exist.";
+            message = "-ERR group does not exist.";
         }
         clientThreads.get(username).sendMessage(message);
     }
@@ -109,10 +109,10 @@ public class Server {
                     ourGroup.removeMember(username);
                 }
             } else {
-                response = "-ERR You are not a part of this group.";
+                response = "-ERR you are not a part of this group.";
             }
         } else {
-            response = "-ERR Group does not exist.";
+            response = "-ERR group does not exist.";
         }
 
         clientThreads.get(username).sendMessage(response);
@@ -130,16 +130,16 @@ public class Server {
                         group.removeMember(kickee);
                         clientThreads.get(kickee).sendMessage("REMOVED " + groupName);
                     } else {
-                        response = "-ERR Cannot kick yourself from a group.";
+                        response = "-ERR cannot kick yourself from a group.";
                     }
                 } else {
-                    response = "-ERR You are not the owner of this group.";
+                    response = "-ERR you are not the owner of this group.";
                 }
             } else {
-                response = "-ERR User is not part of this group.";
+                response = "-ERR user is not part of this group.";
             }
         } else {
-            response = "-ERR Group does not exist.";
+            response = "-ERR group does not exist.";
         }
 
         clientThreads.get(kicker).sendMessage(response);
@@ -184,12 +184,12 @@ public class Server {
                             }
                         }
                     } else {
-                        response = "-ERR Not a part of this group.";
+                        response = "-ERR not a part of this group.";
                     }
                 }
             }
         } else {
-            response = "-ERR Group does not exist.";
+            response = "-ERR group does not exist.";
         }
         clientThreads.get(username).sendMessage(response);
     }
