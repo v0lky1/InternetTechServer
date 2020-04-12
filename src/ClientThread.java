@@ -35,7 +35,7 @@ public class ClientThread extends Thread {
         running = true;
 
         while (running) {
-            int splitLimit = 3;
+            int splitLimit = 2;
 
             String line = "";
 
@@ -51,63 +51,92 @@ public class ClientThread extends Thread {
                 System.out.println("\tIN\t<< " + line);
 
 
-                if (line.startsWith("HELO") || line.startsWith("BCST")) {
-                    splitLimit = 2;
+                if (line.startsWith("DM") || line.startsWith("GRPMSG") || (line.startsWith("KICK"))) {
+                    splitLimit = 3;
                 }
 
+                if (line.equals("PONG")) splitLimit = 1;
+
                 String[] incomingMessage = line.split(" ", splitLimit);
+                String command = incomingMessage[0];
 
-                switch (incomingMessage[0]) {
-                    case "HELO":
-                        String uname = incomingMessage[1];
-                        System.out.println(username);
-                        System.out.println(uname);
+                if (incomingMessage.length == splitLimit) {
 
-                        if (!uname.matches("^[a-zA-Z0-9_]{3,}$")) {
-                            sendMessage("-ERR username has an invalid format (only characters, numbers and underscores are allowed)");
-                        } else if (server.hasUsername(username, uname)) {
-                            sendMessage("+OK HELO " + username);
-                        } else {
-                            sendMessage("-ERR user already logged in");
-                        }
-                        break;
+                    switch (command) {
+                        case "HELO":
+                            String uname = incomingMessage[1];
+                            System.out.println(username);
+                            System.out.println(uname);
 
-                    case "BCST":
-                        String message = "BCST [" + username + "] " + incomingMessage[1];
-                        System.err.println("\tOUT\t>> " + message);
-                        server.sendBroadcastMessage(username, message);
-                        break;
+                            if (!uname.matches("^[a-zA-Z0-9_]{3,}$")) {
+                                sendMessage("-ERR username has an invalid format (only characters, numbers and underscores are allowed)");
+                            } else if (server.hasUsername(username, uname)) {
+                                sendMessage("+OK HELO " + username);
+                            } else {
+                                sendMessage("-ERR user already logged in");
+                            }
+                            break;
 
-                    case "QUIT":
-                        sendMessage("+OK Goodbye");
-                        server.disconnect(username);
-                        break;
+                        case "BCST":
+                            String message = "BCST [" + username + "] " + incomingMessage[1];
+                            System.err.println("\tOUT\t>> " + message);
+                            server.sendBroadcastMessage(username, message);
+                            break;
 
-                    case "RQST":
-                        break;
+                        case "QUIT":
+                            sendMessage("+OK Goodbye");
+                            server.disconnect(username);
+                            break;
 
-                    case "DM":
-                        break;
+                        case "RQST":
+                            String requested = incomingMessage[1].toLowerCase();
+                            if (requested.equals("users")) {
+                                server.sendUserList(username);
+                            } else if (requested.equals("groups")) {
+                                server.sendGroupList(username);
+                            }
+                            break;
 
-                    case "MAKE":
-                        break;
+                        case "DM":
+                            String recipient = incomingMessage[1];
+                            String payload = incomingMessage[2];
+                            String returnMessage = "+OK DM " + recipient + " " + payload;
+                            String recipientMessage = "DM " + username + " " + payload;
+                            server.sendDM(username, recipient, returnMessage, recipientMessage);
+                            break;
 
-                    case "JOIN":
-                        break;
+                        case "MAKE":
+                            server.createGroup(username, incomingMessage[1]);
+                            break;
 
-                    case "GRPMSG":
-                        break;
+                        case "JOIN":
+                            server.joinGroup(username, incomingMessage[1]);
+                            break;
 
-                    case "LEAVE":
-                        break;
+                        case "GRPMSG":
+                            // incomingMessage[1] is the groupname to send the message to.
+                            // incomingMessage[2] is the actual message.
+                            server.sendGroupMessage(username, incomingMessage[1], incomingMessage[2]);
+                            break;
 
-                    case "PONG":
-                        server.notifyPingThread(username);
-                        break;
+                        case "LEAVE":
+                            server.leaveGroup(username, incomingMessage[1]);
+                            break;
 
-                    default:
-                        break;
+                        case "KICK":
+                            server.kickFromGroup(username, incomingMessage[1], incomingMessage[2]);
+                            break;
 
+                        case "PONG":
+                            server.notifyPingThread(username);
+                            break;
+
+                        default:
+                            break;
+
+                    }
+                } else {
+                    sendMessage("-ERR ARE YOU FUCKING RETARDED LEARN TO PROGRAM A FUCKING CHAT CLIENT WTF MAN HANDLE ERRORS ON YOUR END IM FUCKING LAZY MAN");
                 }
             }
         }
